@@ -1,173 +1,132 @@
-body {
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #1e1e2f, #3a3a5a);
-    margin: 0;
-    padding: 20px;
-    color: #fff;
-}
-
+/* styles.css */
 .container {
     max-width: 1200px;
     margin: 0 auto;
-}
-
-header {
-    background: rgba(255, 255, 255, 0.1);
     padding: 20px;
-    border-radius: 10px;
-    backdrop-filter: blur(10px);
-    margin-bottom: 20px;
 }
 
-h1 {
-    margin: 0 0 10px;
-    text-align: center;
+.search-container {
+    margin: 20px 0;
+    position: relative;
 }
 
-#searchBar {
+#searchInput {
     width: 100%;
-    padding: 10px;
-    border: none;
-    border-radius: 5px;
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
+    padding: 12px;
     font-size: 16px;
-    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
 }
 
-.controls {
-    display: flex;
-    gap: 20px;
-    justify-content: center;
-    flex-wrap: wrap;
+.stats {
+    font-size: 14px;
+    color: #666;
+    margin-top: 5px;
 }
 
-#videoGrid {
+.video-grid {
     display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 20px;
-    grid-template-columns: repeat(3, 1fr); /* Default 3 cards per row */
+    will-change: transform;
+}
+
+.video-card {
+    border: 1px solid #eee;
+    border-radius: 4px;
+    padding: 15px;
+    background: white;
+    transition: transform 0.2s;
+}
+
+.video-card:hover {
+    transform: translateY(-5px);
+}
+
+.img-container {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+}
+
+.video-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
     transition: opacity 0.3s;
 }
 
-.card {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    padding: 15px;
-    backdrop-filter: blur(10px);
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.3s;
+.video-card .lazy {
+    opacity: 0.5;
 }
 
-.card:hover {
-    transform: scale(1.05);
+.video-card img:not(.lazy) {
+    opacity: 1;
 }
 
-.card img {
-    width: 100%;
-    border-radius: 5px;
-    height: 200px;
-    object-fit: cover;
-    loading: lazy; /* Native lazy loading */
+.video-card .preview-img {
+    position: absolute;
 }
 
-.badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
+.video-card:hover .preview-img {
+    opacity: 0;
+}
+
+.video-card .hover-img {
+    position: absolute;
+    opacity: 0;
+}
+
+.video-card:hover .hover-img {
+    opacity: 1;
+}
+
+.video-card p {
     margin: 10px 0;
-}
-
-.badge {
-    background: rgba(0, 255, 150, 0.7);
-    padding: 5px 10px;
-    border-radius: 15px;
-    font-size: 12px;
-}
-
-.sound-badge::before {
-    content: "🔊";
-    margin-right: 5px;
-}
-
-.prompt {
     font-size: 14px;
-    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.card:hover .prompt-full {
-    display: block;
+.actions {
+    display: flex;
+    gap: 10px;
 }
 
-.prompt-full {
-    display: none;
-    position: absolute;
-    bottom: 50px;
-    left: 15px;
-    right: 15px;
-    background: rgba(0, 0, 0, 0.8);
-    padding: 10px;
-    border-radius: 5px;
-    font-size: 12px;
-    z-index: 1;
+.download-btn, .share-btn {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    color: white;
 }
 
 .download-btn {
-    width: 100%;
-    padding: 10px;
-    background: #00ff99;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background 0.3s;
+    background: #007bff;
 }
 
 .download-btn:hover {
-    background: #00cc77;
+    background: #0056b3;
 }
 
-#pagination {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 20px;
+.share-btn {
+    background: #28a745;
 }
 
-.page-btn {
-    padding: 10px 15px;
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    color: #fff;
+.share-btn:hover {
+    background: #218838;
 }
 
-.page-btn.active {
-    background: #00ff99;
-}
-
-#loading {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 20px;
-    background: rgba(0, 0, 0, 0.7);
-    padding: 15px;
-    border-radius: 5px;
-}
-
-#error {
+.loading {
+    display: none;
     text-align: center;
     padding: 20px;
-    background: rgba(255, 0, 0, 0.2);
-    border-radius: 5px;
-    margin-top: 20px;
+    color: #666;
 }
-
-.hidden {
-    display: none;
+/* styles.css - Add this at the end */
+#sentinel {
+    height: 1px;
+    visibility: hidden;
 }
