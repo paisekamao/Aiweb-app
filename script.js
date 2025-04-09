@@ -5,41 +5,77 @@ class VideoLibrary {
         this.searchInput = document.getElementById('searchInput');
         this.stats = document.getElementById('stats');
         this.loading = document.getElementById('loading');
+        this.modal = document.getElementById('videoModal');
+        this.videoPlayer = document.getElementById('videoPlayer');
+        this.videoSource = document.getElementById('videoSource');
+        this.closeModal = document.getElementById('closeModal');
         this.allVideos = [];
+        this.filteredVideos = [];
         this.cache = new Map();
         this.observer = null;
+        this.scrollObserver = null;
         this.debounceTimeout = null;
-        
+        this.scrollTimeout = null;
+        this.currentPage = 0;
+        this.pageSize = 20;
+        this.isLoading = false;
+        this.searchTerm = '';
+
         this.init();
     }
 
     async init() {
         this.setupEventListeners();
         this.setupIntersectionObserver();
+        this.setupScrollObserver();
         await this.loadVideos();
     }
 
     setupEventListeners() {
-        // Debounced search
         this.searchInput.addEventListener('input', () => {
             clearTimeout(this.debounceTimeout);
             this.debounceTimeout = setTimeout(() => this.handleSearch(), 300);
         });
 
-        // Keyboard accessibility
         this.searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.handleSearch();
         });
 
-        // Error handling for page unload
         window.addEventListener('unload', () => this.cleanup());
+
+        this.closeModal.addEventListener('click', () => this.closeVideoModal());
+        this.modal.addEventListener('click', (e) => {
+            if (e.target === this.modal) this.closeVideoModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.modal.style.display === 'block') {
+                this.closeVideoModal();
+            }
+        });
     }
 
     setupIntersectionObserver() {
         this.observer = new IntersectionObserver(
             (entries) => this.handleIntersection(entries),
-            { rootMargin: '200px' }
+            { rootMargin: '100px', threshold: 0.1 }
         );
+    }
+
+    setupScrollObserver() {
+        this.scrollObserver = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && !this.isLoading) {
+                    clearTimeout(this.scrollTimeout);
+                    this.scrollTimeout = setTimeout(() => this.loadMoreVideos(), 100);
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        const sentinel = document.createElement('div');
+        sentinel.id = 'sentinel';
+        this.videoGrid.after(sentinel);
+        this.scrollObserver.observe(sentinel);
     }
 
     async loadVideos() {
@@ -53,6 +89,7 @@ class VideoLibrary {
             const cachedData = this.getFromCache('videoData');
             if (cachedData) {
                 this.allVideos = cachedData;
+                this.filteredVideos = cachedData;
                 this.displayVideos();
                 return;
             }
@@ -71,6 +108,7 @@ class VideoLibrary {
             );
 
             this.allVideos = responses.flat().filter(Boolean);
+            this.filteredVideos = this.allVideos;
             this.setToCache('videoData', this.allVideos);
             this.displayVideos();
         } catch (error) {
@@ -109,6 +147,11 @@ class VideoLibrary {
             <p>Quality: ${safeGet(video, 'quality')}</p>
             <div class="actions">
                 <button 
+                    class="play-btn" 
+                    aria-label="Play video ${video.video_id}"
+                    onclick="videoLibrary.playVideo('${safeGet(video, 'url', '#')}')"
+                >Play</button>
+                <button 
                     class="download-btn" 
                     aria-label="Download video ${video.video_id}"
                     onclick="videoLibrary.downloadVideo('${safeGet(video, 'url', '#')}', 'video_${safeGet(video, 'video_id', 'unknown')}.mp4')"
@@ -120,19 +163,29 @@ class VideoLibrary {
             </div>
         `;
 
-        this.observer.observe(card.querySelector('.lazy'));
+        const lazyImages = card.querySelectorAll('.lazy');
+        lazyImages.forEach(img => this.observer.observe(img));
+
         return card;
     }
 
-    displayVideos(videos = this.allVideos) {
-        this.videoGrid.innerHTML = '';
-        if (!videos?.length) {
+    displayVideos(append = false) {
+        const start = this.currentPage * this.pageSize;
+        const end = start + this.pageSize;
+        const pageVideos = this.filteredVideos.slice(start, end);
+
+        if (!append) {
+            this.videoGrid.innerHTML = '';
+            this.currentPage = 0;
+        }
+
+        if (!pageVideos.length && !append) {
             this.videoGrid.innerHTML = '<p>No videos found</p>';
             return;
         }
 
         const fragment = document.createDocumentFragment();
-        videos.forEach(video => {
+        pageVideos.forEach(video => {
             try {
                 fragment.appendChild(this.createVideoCard(video));
             } catch (err) {
@@ -140,21 +193,39 @@ class VideoLibrary {
             }
         });
 
-        this.videoGrid.appendChild(fragment);
-        this.updateStats(videos.length);
+        requestAnimationFrame(() => {
+            this.videoGrid.appendChild(fragment);
+            this.updateStats(this.filteredVideos.length);
+            this.isLoading = false;
+        });
+    }
+
+    async loadMoreVideos() {
+        if (this.isLoading) return;
+        
+        this.isLoading = true;
+        this.showLoading(true);
+        
+        this.currentPage++;
+        const totalPages = Math.ceil(this.filteredVideos.length / this.pageSize);
+
+        if (this.currentPage < totalPages) {
+            this.displayVideos(true);
+        } else {
+            this.isLoading = false;
+            this.showLoading(false);
+        }
     }
 
     handleSearch() {
-        const searchTerm = this.searchInput.value.trim().toLowerCase();
-        if (!searchTerm) {
-            this.displayVideos();
-            return;
-        }
-
-        const filtered = this.allVideos.filter(video =>
-            video.prompt?.toLowerCase().includes(searchTerm)
-        );
-        this.displayVideos(filtered);
+        this.searchTerm = this.searchInput.value.trim().toLowerCase();
+        this.filteredVideos = this.searchTerm
+            ? this.allVideos.filter(video =>
+                video.prompt?.toLowerCase().includes(this.searchTerm)
+              )
+            : this.allVideos;
+        this.currentPage = 0;
+        this.displayVideos();
     }
 
     handleIntersection(entries) {
@@ -166,6 +237,31 @@ class VideoLibrary {
                 this.observer.unobserve(img);
             }
         });
+    }
+
+    playVideo(url) {
+        if (!url || url === '#') {
+            this.showError('No valid video URL available');
+            return;
+        }
+
+        try {
+            this.videoSource.src = url;
+            this.videoPlayer.load();
+            this.modal.style.display = 'block';
+            this.videoPlayer.play().catch(err => {
+                console.warn('Auto-play failed:', err);
+            });
+        } catch (error) {
+            this.handleError('Failed to play video', error);
+        }
+    }
+
+    closeVideoModal() {
+        this.modal.style.display = 'none';
+        this.videoPlayer.pause();
+        this.videoPlayer.currentTime = 0;
+        this.videoSource.src = '';
     }
 
     async downloadVideo(url, filename) {
@@ -204,7 +300,6 @@ class VideoLibrary {
         }).catch(err => this.handleError('Share failed', err));
     }
 
-    // Cache management
     getFromCache(key) {
         const cached = localStorage.getItem(key);
         return cached ? JSON.parse(cached) : null;
@@ -218,13 +313,13 @@ class VideoLibrary {
         }
     }
 
-    // UI helpers
     showLoading(show) {
         this.loading.style.display = show ? 'block' : 'none';
     }
 
-    updateStats(count) {
-        this.stats.textContent = `Showing ${count} of ${this.allVideos.length} videos`;
+    updateStats(total) {
+        const displayed = Math.min((this.currentPage + 1) * this.pageSize, total);
+        this.stats.textContent = `Showing ${displayed} of ${total} videos`;
     }
 
     showError(message) {
@@ -238,7 +333,10 @@ class VideoLibrary {
 
     cleanup() {
         this.observer?.disconnect();
+        this.scrollObserver?.disconnect();
         clearTimeout(this.debounceTimeout);
+        clearTimeout(this.scrollTimeout);
+        this.closeVideoModal();
     }
 }
 
