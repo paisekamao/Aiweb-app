@@ -29,7 +29,6 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 20px;
-    will-change: transform;
 }
 
 .video-card {
@@ -91,20 +90,32 @@
 
 .actions {
     display: flex;
-    gap: 10px;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
-.download-btn, .share-btn {
+.play-btn {
     flex: 1;
     padding: 8px;
+    background: #17a2b8;
+    color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    color: white;
+}
+
+.play-btn:hover {
+    background: #138496;
 }
 
 .download-btn {
+    flex: 1;
+    padding: 8px;
     background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
 }
 
 .download-btn:hover {
@@ -112,11 +123,21 @@
 }
 
 .share-btn {
+    flex: 1;
+    padding: 8px;
     background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
 }
 
 .share-btn:hover {
     background: #218838;
+}
+
+.play-btn, .download-btn, .share-btn {
+    min-width: 80px;
 }
 
 .loading {
@@ -125,8 +146,53 @@
     padding: 20px;
     color: #666;
 }
-/* styles.css - Add this at the end */
+
 #sentinel {
     height: 1px;
     visibility: hidden;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    position: relative;
+    max-width: 90%;
+    max-height: 90vh;
+    background: #fff;
+    padding: 20px;
+    border-radius: 4px;
+    overflow: auto;
+}
+
+#videoPlayer {
+    width: 100%;
+    max-height: 80vh;
+    display: block;
+}
+
+.close-modal {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #333;
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+.close-modal:hover {
+    color: #000;
 }
